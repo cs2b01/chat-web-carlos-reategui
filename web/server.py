@@ -26,6 +26,22 @@ def get_users():
         data.append(user)
     return Response(json.dumps(data, cls=connector.AlchemyEncoder), mimetype='application/json')
 
+@app.route('/authenticate', methods = ['POST'])
+def authenticate():
+    #1. get data from request
+    username = request.form['username']
+    password = request.form['password']
+
+    #2. look in data base & #3. Anyone has the username and password requested?
+    db_session = db.getSession(engine)
+    try:
+        user = db_session.query(entities.User
+            ).filter(entities.User.username == username
+            ).filter(entities.User.password == password
+            ).one()
+        return render_template("success.html")
+    except Exception:
+        return render_template("fail.html")
 
 #Create
 @app.route('/users', methods = ['POST'])
