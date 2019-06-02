@@ -1,5 +1,5 @@
 $(function(){
-    var url = "http://127.0.0.1:8080/users";
+    var url = "http://127.0.0.1:8080/messages";
 
 
     $("#grid").dxDataGrid({
@@ -34,13 +34,15 @@ $(function(){
             dataType: "number",
             allowEditing: false
         }, {
-            dataField: "username"
+            dataField: "content"
         }, {
-            dataField: "message"
+            dataField: "sent_on"
+            dataType: "DateTime"
+            allowEditing: false
         }, {
-            dataField: "user_from"
+            dataField: "user_from_id"
         }, {
-            dataField: "user_to"
+            dataField: "user_to_id"
         }, ],
     }).dxDataGrid("instance");
 });
