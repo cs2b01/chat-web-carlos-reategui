@@ -26,7 +26,7 @@ def authenticate():
     #2. look in data base & #3. Anyone has the username and password requested?
     db_session = db.getSession(engine)
     try:
-        user = db_session.query(entities.User
+        db_session.query(entities.User
             ).filter(entities.User.username == username
             ).filter(entities.User.password == password
             ).one()
@@ -108,7 +108,7 @@ def create_message():
     c =  json.loads(request.form['values'])
     message = entities.Message(
         content=c['content'],
-        sent_on=c['sent_on'],
+        sent_on= datetime.now(),
         user_from_id=c['user_from_id'],
         user_to_id=c['user_to_id']
     )
@@ -141,8 +141,8 @@ def update_message():
     return 'Updated Message'
 
 #Delete
-@app.route('/users', methods = ['DELETE'])
-def delete_user():
+@app.route('/messages', methods = ['DELETE'])
+def delete_message():
     id = request.form['key']
     session = db.getSession(engine)
     messages = session.query(entities.Message).filter(entities.Message.id == id)

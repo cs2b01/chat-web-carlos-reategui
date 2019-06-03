@@ -1,5 +1,6 @@
 $(function(){
     var url = "http://127.0.0.1:8080/messages";
+    var urlUsers = "http://127.0.0.1:8080/users";
 
 
     $("#grid").dxDataGrid({
@@ -36,13 +37,36 @@ $(function(){
         }, {
             dataField: "content"
         }, {
-            dataField: "sent_on"
-            dataType: "DateTime"
+            dataField: "sent_on",
             allowEditing: false
         }, {
-            dataField: "user_from_id"
+            dataField: "user_from_id",
+            dataType: "number",
+            lookup: {
+                dataSource: DevExpress.data.AspNet.createStore({
+                    key: "id",
+                    loadUrl: urlUsers ,
+                    onBeforeSend: function(method, ajaxOptions) {
+                        ajaxOptions.xhrFields = { withCredentials: true };
+                    }
+                }),
+                valueExpr: "id",
+                displayExpr: "username"
+            }
         }, {
-            dataField: "user_to_id"
-        }, ],
+            dataField: "user_to_id",
+            dataType: "number",
+            lookup: {
+                dataSource: DevExpress.data.AspNet.createStore({
+                    key: "id",
+                    loadUrl: urlUsers,
+                    onBeforeSend: function(method, ajaxOptions) {
+                        ajaxOptions.xhrFields = { withCredentials: true };
+                    }
+                }),
+                valueExpr: "id",
+                displayExpr: "username"
+            }
+        },  ],
     }).dxDataGrid("instance");
 });
