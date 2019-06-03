@@ -2,7 +2,6 @@ from flask import Flask,render_template, request, session, Response, redirect
 from database import connector
 from model import entities
 import json
-from datetime import datetime
 
 db = connector.Manager()
 engine = db.createEngine()
@@ -108,7 +107,6 @@ def create_message():
     c =  json.loads(request.form['values'])
     message = entities.Message(
         content=c['content'],
-        sent_on= datetime.now(),
         user_from_id=c['user_from_id'],
         user_to_id=c['user_to_id']
     )
