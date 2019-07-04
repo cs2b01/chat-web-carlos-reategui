@@ -16,17 +16,15 @@ function getData(){
             data : message,
             dataType:'json',
             success: function(response){
-                //$('#action').html(response['statusText']);
+                $('#action').html(response['statusText']);
+                $('#loading').hide();
+                $('#ok').show();
+                window.location.href="http://127.0.0.1:5000/"
             },
             error: function(response){
                 //alert(JSON.stringify(response));
-                if(response['status']==401){
-                    $('#loading').hide();
-                    $('#fail').show()
-                }else{
-                    $('#loading').hide();
-                    $('#ok').show()
-                }
+                $('#loading').hide();
+                $('#fail').show();
             }
         });
     }

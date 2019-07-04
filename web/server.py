@@ -1,8 +1,12 @@
 from flask import Flask,render_template, request, session, Response, redirect
 from database import connector
 from model import entities
+from operator import itemgetter, attrgetter
 import json
 import time
+from datetime import datetime
+from sqlalchemy.sql import func
+from sqlalchemy import or_, and_
 
 db = connector.Manager()
 engine = db.createEngine()
@@ -27,6 +31,40 @@ def get_users():
         data.append(user)
     return Response(json.dumps(data, cls=connector.AlchemyEncoder), mimetype='application/json')
 
+@app.route('/users', methods = ['DELETE'])
+def delete_user():
+    id = request.form['key']
+    session = db.getSession(engine)
+    messages = session.query(entities.User).filter(entities.User.id == id)
+    for message in messages:
+        session.delete(message)
+    session.commit()
+    return "User Deleted"\
+
+
+@app.route('/mobile/users', methods = ['GET'])
+def get_mobile_users():
+    session = db.getSession(engine)
+    dbResponse = session.query(entities.User)
+    data = []
+    for user in dbResponse:
+        data.append(user)
+    message = {'data': data}
+    return Response(json.dumps(message, cls=connector.AlchemyEncoder), mimetype='application/json')
+
+@app.route('/mobile/user/allExcept/<id>', methods = ['GET'])
+def get_user_allExceptMobile(id):
+    db_session = db.getSession(engine)
+    try:
+        dbResponse = db_session.query(entities.User).filter(entities.User.id != id)
+        data = []
+        for user in dbResponse:
+            data.append(user)
+        message = {'data' : data}
+        return Response(json.dumps(message, cls=connector.AlchemyEncoder), status=200, mimetype='application/json')
+    except Exception:
+        message = { 'status': 404, 'message': 'Not Found'}
+        return Response(message, status=404, mimetype='application/json')
 
 @app.route('/users/<id>', methods = ['GET'])
 def get_user(id):
@@ -76,9 +114,32 @@ def authenticate():
             ).one()
         session['logged_user'] = user.id
         message = {'message': 'Authorized'}
+        message = json.dumps(message, cls=connector.AlchemyEncoder)
         return Response(message, status=200, mimetype='application/json')
     except Exception:
         message = {'message': 'Unauthorized'}
+        message = json.dumps(message, cls=connector.AlchemyEncoder)
+        return Response(message, status=401, mimetype='application/json')
+
+@app.route('/mobile/authenticate', methods = ["POST"])
+def authenticateMobile():
+    message = json.loads(request.data)
+    username = message['username']
+    password = message['password']
+    #2. look in database
+    db_session = db.getSession(engine)
+    try:
+        user = db_session.query(entities.User
+            ).filter(entities.User.username == username
+            ).filter(entities.User.password == password
+            ).one()
+        session['logged_user'] = user.id
+        message = {'message': 'Authorized', 'user_id': user.id, 'username': user.name}
+        message = json.dumps(message, cls=connector.AlchemyEncoder)
+        return Response(message, status=200, mimetype='application/json')
+    except Exception:
+        message = {'message': 'Unauthorized'}
+        message = json.dumps(message, cls=connector.AlchemyEncoder)
         return Response(message, status=401, mimetype='application/json')
 
 @app.route('/current', methods = ["GET"])
@@ -112,6 +173,21 @@ def get_messages(user_from_id, user_to_id ):
     return Response(json.dumps(data, cls=connector.AlchemyEncoder), mimetype='application/json')
 
 
+@app.route('/mobile/messages/<user_from_id>/and/<user_to_id>', methods = ['GET'])
+def get_mobile_messages(user_from_id, user_to_id):
+    db_session = db.getSession(engine)
+    chats = db_session.query(entities.Message).filter(
+        or_(
+            and_(entities.Message.user_from_id == user_from_id, entities.Message.user_to_id == user_to_id),
+            and_(entities.Message.user_from_id == user_to_id, entities.Message.user_to_id == user_from_id),
+        )
+    )
+    data = []
+    for chat in chats:
+        data.append(chat)
+    message = {'response' : data}
+    return Response(json.dumps(message, cls=connector.AlchemyEncoder), status=200, mimetype='application/json')
+
 @app.route('/gabriel/messages', methods = ["POST"])
 def create_message():
     data = json.loads(request.data)
@@ -131,6 +207,24 @@ def create_message():
 
     response = {'message': 'created'}
     return Response(json.dumps(response, cls=connector.AlchemyEncoder), status=200, mimetype='application/json')
+
+@app.route('/mobile/messages/postMessage', methods = ['POST'])
+def new_message():
+    try:
+        c = json.loads(request.data)
+        message = entities.Message(
+            content=c['content'],
+            user_from_id=c['user_from_id'],
+            user_to_id=c['user_to_id']
+        )
+        session = db.getSession(engine)
+        session.add(message)
+        session.commit()
+        message = {'message': 'Authorized'}
+        return Response(message, status=200, mimetype='application/json')
+    except Exception:
+        message = {'message': 'Unauthorized'}
+        return Response(message, status=401, mimetype='application/json')
 
 if __name__ == '__main__':
     app.secret_key = ".."
